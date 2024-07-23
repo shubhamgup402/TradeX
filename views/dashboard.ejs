@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/script.js" defer></script>
+  <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+</head>
+<body>
+  <div class="main-body" style="display: flex; flex-direction: column; width: 100%;">
+    <nav class="topbar">
+      <ul id="menu-bar" class="menu-bar">
+        <div class="header">
+          <h3>Zero2one</h3>
+        </div>
+        <div id="sub-menu-bar" class="sub-menu-bar">
+          <div>Funds</div>
+          <div id="username">Welcome <span id="user-name"><%= username %></span></div>
+          <div><a href="/holdings" style="color: white;">Holding</a></div>
+          <div>Transaction</div>
+          <div><a style="color: white;" href="/logout">Logout</a></div>
+          <div id="balance">Balance: $<%= balance %></div>
+        </div>
+      </ul>
+    </nav>
+    <div class="main-content">
+      <div class="watchlist">
+        <div style="text-align: center;">
+          My Watchlist
+        </div>
+        <div>
+          <ul id="cryptoList"></ul>
+        </div>
+      </div>
+      <main>
+        <div class="tradingview-widget-container">
+          <div class="tradingview-widget-container__widget"></div>
+        </div>
+      </main>
+      <div id="myportfolio">
+        <h3>My Portfolio</h3>
+        <h4>Holding Positions</h4>
+        <div id="balance">Balance: $<%= balance %></div>
+        <h4>Add Funds</h4>
+        <form action="/add-funds" method="POST">
+          <label for="fund-amount">Amount:</label>
+          <input type="number" id="fund-amount" name="amount" min="0" required>
+          <button type="submit">Add Funds</button>
+        </form>
+        <div id="holding-positions-container"></div>
+        <div id="myportfolio-container">
+          <h4>Place Order </h4>
+          <form id="order-form" action="/order" method="POST">
+            <input type="hidden" id="stock_symbol" name="stock_symbol" value="">
+            <div id="symbol-name">Symbol: <span id="symbol-name-display"></span></div>
+            <label for="quantity">Quantity:</label>
+            <input type="number" class="quantity-input" name="quantity" id="quantity" value="0" min="1" required><br>
+            <div id="quantity-error" style="color: red; display: none;">This field cannot be empty</div><br>
+            <div id="required-amount">Required Amount: $0.00</div>
+            <br>
+            <label for="order-type-select">Order Type:</label>
+            <select name="order_type" id="order-type-select">
+              <option value="market">Market</option>
+              <option value="limit">Limit</option>
+            </select>
+            <br>
+            <div id="limit-price-container" style="display:none;">
+              <label for="limit-price">Limit Price:</label>
+              <input type="number" name="limit_price" id="limit-price" min="0" step="0.005">
+            </div>
+            <br>
+            <div id="buttonbuysell" class="buttonbuysell">
+              <button type="submit" id="Buybtn" class="buy-button" name="order_action" value="buy">Buy Order</button>
+              <button type="submit" id="Sellbtn" class="sell-button" name="order_action" value="sell">Sell Order</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
