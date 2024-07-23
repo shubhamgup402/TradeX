@@ -2,11 +2,11 @@
 const { Pool } = require('pg');
 
 const pool = new Pool({
-  host: "localhost",
+  host: "TradeX-db",
   port: 5432,
-  user: "postgres",
-  password: "blogger@123$#",
-  database: "virtualdb",
+  user: "virtualdb_f18n_user",
+  password: "h9DVLzD5H1mcObMekkpYWdAtH9V8Ecqo",
+  database: "virtualdb_f18n",
 });
 
 module.exports = pool;
