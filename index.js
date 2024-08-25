@@ -14,7 +14,7 @@ const pool = require('./db/config');
 const reportsRoutes = require('./routes/reports');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
