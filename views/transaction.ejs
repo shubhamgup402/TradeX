@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transaction and Order History</title>
+<style>
+body {
+  background-color: #181818;
+  color: white;
+  font-family: sans-serif;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th, td {
+  text-align: center;
+  padding: 8px;
+}
+
+th {
+  background-color: #282828;
+}
+
+tr:nth-child(even) {
+  background-color: #383838;
+}
+
+.pending {
+  background-color: #FFC107;
+  color: black;
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+.executed {
+  background-color: #4CAF50;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+.cancel-button {
+  background-color: #F44336;
+  color: white;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.cancel-button:hover {
+  background-color: #d32f2f;
+}
+</style>
+</head>
+<body>
+
+<h1>Open Orders</h1>
+<table>
+  <tr>
+    <th>Submission Date</th>
+    <th>Status</th>
+    <th>Action (Type)</th>
+    <th>Crypto Name</th>
+    <th>Quantity</th>
+    <th>Order Price $</th>
+    <th>Order Value $</th>
+    <th>Cancel</th>
+  </tr>
+  <% if (typeof pendingOrders !== 'undefined' && pendingOrders.length > 0) { %>
+    <% pendingOrders.forEach(order => { %>
+      <tr>
+        <td><%= new Date(order.created_at).toLocaleString() %></td>
+        <td><span class="pending">Pending</span></td>
+        <td><%= order.order_action %><br><%= order.type %></td>
+        <td><%= order.stock_symbol %></td>
+        <td><%= order.quantity %></td>
+        <td><%= order.limit_price %></td>
+        <td><%= order.limit_price * order.quantity %></td>
+        <td>
+          <button class="cancel-button" onclick="cancelOrder('<%= order.order_id %>')">Cancel</button>
+        </td>
+      </tr>
+    <% }); %>
+  <% } else { %>
+    <tr>
+      <td colspan="8">No pending orders found.</td>
+    </tr>
+  <% } %>
+</table>
+
+<div style="margin-top: 30px;">
+  <h1 style="float: left;">Trade History</h1>
+  <span class="up-arrow" style="float: right;">&#x25B2;</span>
+</div>
+
+<table>
+  <tr>
+    <th>Settlement Date</th>
+    <th>Status</th>
+    <th>Action (Type)</th>
+    <th>Crypto Name</th>
+    <th>Quantity</th>
+    <th>Avg. Price $</th>
+    <th>Order Value $</th>
+  </tr>
+  <% if (typeof transactions !== 'undefined' && transactions.length > 0) { %>
+    <% transactions.forEach(transaction => { %>
+      <tr>
+        <td><%= new Date(transaction.transaction_date).toLocaleString() %></td>
+        <td><span class="executed"><%= transaction.status %></span></td>
+        <td><%= transaction.order_action %><br><%= transaction.order_type %></td>
+        <td><%= transaction.stock_name %></td>
+        <td><%= transaction.quantity %></td>
+        <td><%= transaction.limit_price %></td>
+        <td><%= transaction.limit_price * transaction.quantity %></td>
+      </tr>
+    <% }); %>
+  <% } else { %>
+    <tr>
+      <td colspan="7">No transactions found.</td>
+    </tr>
+  <% } %>
+</table>
+
+<script>
+function cancelOrder(orderId) {
+  if (confirm('Are you sure you want to cancel this order?')) {
+    fetch(`/cancel-order/${orderId}`, {
+      method: 'DELETE'
+    })
+    .then(response => response.text())
+    .then(data => {
+      alert(data);
+      location.reload();
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('An error occurred while canceling the order');
+    });
+  }
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profit and Loss Report</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+        .actions, .search-container {
+            margin-bottom: 20px;
+        }
+        .time-periods {
+            margin-bottom: 20px;
+        }
+        .table-container {
+            margin-top: 20px;
+        }
+        .pnl-gain {
+            color: green;
+        }
+        .pnl-loss {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div>Total Portfolio P&L</div>
+        <div class="value">$<%= totalProfit.toFixed(2) %></div>
+        <div>Total Portfolio P&L %</div>
+        <div class="value"><%= totalProfitPercentage.toFixed(2) %>%</div>
+    </div>
+
+    <div class="actions">
+        <button class="btn btn-primary">Download</button>
+        <button class="btn btn-secondary">Email</button>
+    </div>
+
+    <div class="search-container">
+        <input type="text" class="form-control" placeholder="Search for scrips">
+    </div>
+
+    <div class="time-periods mb-3">
+        <a href="/reports?period=1d" class="btn <%= period === '1d' ? 'btn-primary' : 'btn-light' %>">1 Day</a>
+        <a href="/reports?period=1m" class="btn <%= period === '1m' ? 'btn-primary' : 'btn-light' %>">1 Month</a>
+        <a href="/reports?period=3m" class="btn <%= period === '3m' ? 'btn-primary' : 'btn-light' %>">3 Months</a>
+        <a href="/reports?period=6m" class="btn <%= period === '6m' ? 'btn-primary' : 'btn-light' %>">6 Months</a>
+        <a href="/reports?period=1y" class="btn <%= period === '1y' ? 'btn-primary' : 'btn-light' %>">1 Year</a>
+        <a href="/reports?period=max" class="btn <%= period === 'max' ? 'btn-primary' : 'btn-light' %>">Max</a>
+    </div>
+
+    <div class="table-container">
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Stock Symbol</th>
+                    <th>Total Profit/Loss</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% pandlData.forEach((entry) => { %>
+                <tr>
+                    <td><%= new Date(entry.pl_date).toLocaleDateString() %></td>
+                    <td><%= entry.stock_name %></td>
+                    <td><%= entry.stock_symbol %></td>
+                    <td class="<%= entry.total_profit_loss >= 0 ? 'pnl-gain' : 'pnl-loss' %>">
+                        $<%= (parseFloat(entry.total_profit_loss) || 0).toFixed(2) %>
+                    </td>                    
+                </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</body>
+</html>
