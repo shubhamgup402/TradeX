@@ -14,6 +14,6 @@
   },
   "scripts": {
     "start": "node index.js",
-    "build": "run build "
+    "build": "echo 'No build step needed'"
   }
 }
