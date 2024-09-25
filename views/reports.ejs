@@ -71,9 +71,9 @@
             <tbody>
                 <% pandlData.forEach((entry) => { %>
                 <tr>
-                    <td><%= new Date(entry.pl_date).toLocaleDateString() %></td>
+                    <td><%= entry.pl_date %></td> <!-- Display date in the proper format -->
                     <td><%= entry.stock_name %></td>
-                    <td><%= entry.stock_symbol %></td>
+                    <!-- <td><%= entry.stock_symbol %></td> -->
                     <td class="<%= entry.total_profit_loss >= 0 ? 'pnl-gain' : 'pnl-loss' %>">
                         $<%= (parseFloat(entry.total_profit_loss) || 0).toFixed(2) %>
                     </td>                    

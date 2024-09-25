@@ -25,7 +25,7 @@ const getStartDate = (period) => {
         case 'max':
         default:
             // No change needed for 'max', return very old date to get all data
-            now.setFullYear(1970); 
+            now.setFullYear(1970);
             break;
     }
     return now.toISOString().split('T')[0]; // Format date as YYYY-MM-DD
@@ -45,10 +45,11 @@ router.get('/reports', authMiddleware, async (req, res) => {
         // Fetch aggregated profit and loss data by stock symbol for the user within the specified time period
         const result = await pool.query(
             `SELECT stock_symbol, stock_name, 
+                    TO_CHAR(pl_date, 'YYYY-MM-DD') AS pl_date,  -- Convert to YYYY-MM-DD format
                     SUM(profit_loss)::numeric as total_profit_loss 
              FROM profits_losses 
              WHERE user_id = $1 AND pl_date >= $2 
-             GROUP BY stock_symbol, stock_name 
+             GROUP BY stock_symbol, stock_name, pl_date 
              ORDER BY stock_symbol ASC`,
             [userId, startDate]
         );
