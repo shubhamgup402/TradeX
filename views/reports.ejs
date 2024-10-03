@@ -1,88 +1,128 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profit and Loss Report</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <style>
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .value {
-            font-size: 2em;
-            font-weight: bold;
-        }
-        .actions, .search-container {
-            margin-bottom: 20px;
-        }
-        .time-periods {
-            margin-bottom: 20px;
-        }
-        .table-container {
-            margin-top: 20px;
-        }
-        .pnl-gain {
-            color: green;
-        }
-        .pnl-loss {
-            color: red;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>
+  <div class="container mt-4">
+    <h1>Profit & Loss Report</h1>
+    
+    <!-- Display User Info -->
+     
+    <!-- Search Bar -->
+    <input type="text" id="searchField" onkeyup="searchReports()" class="form-control mb-4" placeholder="Search for scripts" aria-label="Search">
 
-<div class="container">
-    <div class="header">
-        <div>Total Portfolio P&L</div>
-        <div class="value">$<%= totalProfit.toFixed(2) %></div>
-        <div>Total Portfolio P&L %</div>
-        <div class="value"><%= totalProfitPercentage.toFixed(2) %>%</div>
+    <!-- Time Period Filter Buttons -->
+    <form action="/reports" method="GET" class="mb-4">
+      <div class="btn-group mb-3" role="group">
+        <button type="submit" class="btn btn-secondary" name="period" value="1d">Today</button>
+        <button type="submit" class="btn btn-secondary" name="period" value="1m">1 Month</button>
+        <button type="submit" class="btn btn-secondary" name="period" value="3m">Quarter</button>
+        <button type="submit" class="btn btn-secondary" name="period" value="6m">6 Months</button>
+        <button type="submit" class="btn btn-secondary" name="period" value="1y">1 Year</button>
+        <button type="submit" class="btn btn-secondary" name="period" value="max">Max</button>
+      </div>
+
+      <!-- Custom Date Range Filter -->
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label for="startDate" class="form-label">From</label>
+          <input type="date" id="startDate" name="startDate" class="form-control" value="<%= customStartDate || '' %>">
+        </div>
+        <div class="col-md-4">
+          <label for="endDate" class="form-label">To</label>
+          <input type="date" id="endDate" name="endDate" class="form-control" value="<%= customEndDate || '' %>">
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary">Filter</button>
+        </div>
+      </div>
+    </form>
+
+    <!-- Reports Table -->
+    <table class="table table-striped" id="reportsTable">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Stock Name</th>
+          <th>Total Profit/Loss</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (reportsData && reportsData.length > 0) { %>
+          <% reportsData.forEach(function(report) { %>
+            <tr>
+              <td><%= report.pl_date %></td>
+              <td><%= report.stock_name %></td>
+              <td><%= report.total_profit_loss %></td>
+            </tr>
+          <% }); %>
+        <% } else { %>
+          <tr>
+            <td colspan="3">No data available</td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+
+    <!-- Download Reports -->
+    <form action="/reports/download" method="GET">
+      <button type="submit" class="btn btn-primary">Download Reports</button>
+    </form>
+
+    <!-- Transaction Modal -->
+    <div class="modal fade" id="transactionsModal" tabindex="-1" aria-labelledby="transactionsModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="transactionsModalLabel">Transactions</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <ul id="transactionsList"></ul>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <div class="actions">
-        <button class="btn btn-primary">Download</button>
-        <button class="btn btn-secondary">Email</button>
-    </div>
+  <script>
+    // Search Functionality
+    function searchReports() {
+      let input = document.getElementById('searchField');
+      let filter = input.value.toLowerCase();
+      let table = document.getElementById('reportsTable');
+      let rows = table.getElementsByTagName('tr');
 
-    <div class="search-container">
-        <input type="text" class="form-control" placeholder="Search for scrips">
-    </div>
+      for (let i = 1; i < rows.length; i++) {
+        let td = rows[i].getElementsByTagName('td')[1];
+        if (td) {
+          let textValue = td.textContent || td.innerText;
+          rows[i].style.display = textValue.toLowerCase().indexOf(filter) > -1 ? '' : 'none';
+        }
+      }
+    }
 
-    <div class="time-periods mb-3">
-        <a href="/reports?period=1d" class="btn <%= period === '1d' ? 'btn-primary' : 'btn-light' %>">1 Day</a>
-        <a href="/reports?period=1m" class="btn <%= period === '1m' ? 'btn-primary' : 'btn-light' %>">1 Month</a>
-        <a href="/reports?period=3m" class="btn <%= period === '3m' ? 'btn-primary' : 'btn-light' %>">3 Months</a>
-        <a href="/reports?period=6m" class="btn <%= period === '6m' ? 'btn-primary' : 'btn-light' %>">6 Months</a>
-        <a href="/reports?period=1y" class="btn <%= period === '1y' ? 'btn-primary' : 'btn-light' %>">1 Year</a>
-        <a href="/reports?period=max" class="btn <%= period === 'max' ? 'btn-primary' : 'btn-light' %>">Max</a>
-    </div>
-
-    <div class="table-container">
-        <table class="table table-bordered table-striped">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Stock Symbol</th>
-                    <th>Total Profit/Loss</th>
-                </tr>
-            </thead>
-            <tbody>
-                <% pandlData.forEach((entry) => { %>
-                <tr>
-                    <td><%= entry.pl_date %></td> <!-- Display date in the proper format -->
-                    <td><%= entry.stock_name %></td>
-                    <!-- <td><%= entry.stock_symbol %></td> -->
-                    <td class="<%= entry.total_profit_loss >= 0 ? 'pnl-gain' : 'pnl-loss' %>">
-                        $<%= (parseFloat(entry.total_profit_loss) || 0).toFixed(2) %>
-                    </td>                    
-                </tr>
-                <% }) %>
-            </tbody>
-        </table>
-    </div>
-</div>
-
+    // Fetch Transactions and display them in a modal
+    function viewTransactions(stockSymbol) {
+      fetch(`/transactions?symbol=${stockSymbol}`)
+        .then(response => response.json())
+        .then(transactions => {
+          const transactionsList = document.getElementById('transactionsList');
+          transactionsList.innerHTML = '';
+          transactions.forEach(transaction => {
+            let listItem = document.createElement('li');
+            listItem.textContent = `Date: ${transaction.transaction_date}, Quantity: ${transaction.quantity}, Amount: ${transaction.amount}`;
+            transactionsList.appendChild(listItem);
+          });
+          new bootstrap.Modal(document.getElementById('transactionsModal')).show();
+        })
+        .catch(error => console.error('Error fetching transactions:', error));
+    }
+  </script>
 </body>
 </html>

@@ -24,7 +24,6 @@ const getStartDate = (period) => {
             break;
         case 'max':
         default:
-            // No change needed for 'max', return very old date to get all data
             now.setFullYear(1970);
             break;
     }
@@ -34,36 +33,119 @@ const getStartDate = (period) => {
 // Route to fetch profit and loss data
 router.get('/reports', authMiddleware, async (req, res) => {
     const userId = req.session.userId;
-    const period = req.query.period || 'max'; // default to 'max' if no period is provided
-    const startDate = getStartDate(period);
+    const period = req.query.period || 'max'; // Default to 'max' if no period is provided
+    const customStartDate = req.query.startDate || null;
+    const customEndDate = req.query.endDate || null;
+    
+    // If custom date range is provided, use that. Otherwise, calculate based on the period.
+    const startDate = customStartDate || getStartDate(period);
+    const endDate = customEndDate || new Date().toISOString().split('T')[0]; // Default to today's date
 
     if (!userId) {
         return res.status(403).send('Not authorized');
     }
 
     try {
-        // Fetch aggregated profit and loss data by stock symbol for the user within the specified time period
+        // Fetch user email and name (fix: changed `id` to `user_id`)
+        const userInfo = await pool.query(`SELECT username, email FROM users WHERE user_id = $1`, [userId]);
+        const user = userInfo.rows[0];
+
         const result = await pool.query(
             `SELECT stock_symbol, stock_name, 
-                    TO_CHAR(pl_date, 'YYYY-MM-DD') AS pl_date,  -- Convert to YYYY-MM-DD format
-                    SUM(profit_loss)::numeric as total_profit_loss 
+                    TO_CHAR(pl_date, 'YYYY-MM-DD') AS pl_date,  
+                    SUM(profit_loss)::numeric as total_profit_loss,
+                    SUM(invested)::numeric as total_invested
              FROM profits_losses 
-             WHERE user_id = $1 AND pl_date >= $2 
+             WHERE user_id = $1 AND pl_date BETWEEN $2 AND $3
              GROUP BY stock_symbol, stock_name, pl_date 
              ORDER BY stock_symbol ASC`,
-            [userId, startDate]
+            [userId, startDate, endDate]
         );
 
-        const pandlData = result.rows;
+        const reportsData = result.rows;
 
-        // Calculate total profit and profit percentage for the period
-        const totalProfit = pandlData.reduce((acc, entry) => acc + parseFloat(entry.total_profit_loss), 0);
-        const totalProfitPercentage = (totalProfit / 10000) * 100; // Assuming initial investment was 10000, adjust as needed
+        // Calculate total profit, total invested, and percentage return
+        const totalProfit = reportsData.reduce((acc, entry) => acc + parseFloat(entry.total_profit_loss), 0);
+        const totalInvested = reportsData.reduce((acc, entry) => acc + (parseFloat(entry.total_invested) || 0), 0);
+        const totalProfitPercentage = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
 
-        // Render the P&L data on the reports.ejs page
-        res.render('reports', { pandlData, period, totalProfit, totalProfitPercentage });
+        // Render the reports page with data
+        res.render('reports', { 
+            reportsData, 
+            period, 
+            totalProfit, 
+            totalProfitPercentage, 
+            totalInvested, 
+            customStartDate, 
+            customEndDate,
+            user // Pass the user's email and name to the template
+        });
     } catch (err) {
         console.error('Error fetching profit and loss data:', err);
+        res.status(500).send('Server error');
+    }
+});
+
+// Additional route to handle downloading reports as CSV
+router.get('/reports/download', authMiddleware, async (req, res) => {
+    const userId = req.session.userId;
+
+    if (!userId) {
+        return res.status(403).send('Not authorized');
+    }
+
+    try {
+        const result = await pool.query(
+            `SELECT stock_symbol, stock_name, 
+                    TO_CHAR(pl_date, 'YYYY-MM-DD') AS pl_date,  
+                    SUM(profit_loss)::numeric as total_profit_loss,
+                    SUM(invested)::numeric as total_invested
+             FROM profits_losses 
+             WHERE user_id = $1
+             GROUP BY stock_symbol, stock_name, pl_date 
+             ORDER BY stock_symbol ASC`,
+            [userId]
+        );
+
+        const reportsData = result.rows;
+
+        // Generate CSV
+        let csv = 'Stock Symbol,Stock Name,Date,Total Profit/Loss,Total Invested\n';
+        reportsData.forEach(report => {
+            csv += `${report.stock_symbol},${report.stock_name},${report.pl_date},${report.total_profit_loss},${report.total_invested}\n`;
+        });
+
+        // Set headers for download
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=reports.csv');
+        res.send(csv);
+    } catch (err) {
+        console.error('Error downloading reports:', err);
+        res.status(500).send('Server error');
+    }
+});
+
+// Route to fetch transactions based on stock symbol
+router.get('/transactions', authMiddleware, async (req, res) => {
+    const userId = req.session.userId;
+    const stockSymbol = req.query.symbol;
+
+    if (!userId || !stockSymbol) {
+        return res.status(403).send('Not authorized');
+    }
+
+    try {
+        const result = await pool.query(
+            `SELECT transaction_date, quantity, amount 
+             FROM transactions 
+             WHERE user_id = $1 AND stock_symbol = $2 
+             ORDER BY transaction_date ASC`,
+            [userId, stockSymbol]
+        );
+
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching transactions:', err);
         res.status(500).send('Server error');
     }
 });
