@@ -33,23 +33,35 @@ const getStartDate = (period) => {
 // Route to fetch profit and loss data
 router.get('/reports', authMiddleware, async (req, res) => {
     const userId = req.session.userId;
+    // console.log('Fetching reports for User ID:', userId); // Debug log
+
     const period = req.query.period || 'max'; // Default to 'max' if no period is provided
     const customStartDate = req.query.startDate || null;
     const customEndDate = req.query.endDate || null;
-    
+
     // If custom date range is provided, use that. Otherwise, calculate based on the period.
     const startDate = customStartDate || getStartDate(period);
     const endDate = customEndDate || new Date().toISOString().split('T')[0]; // Default to today's date
 
+    // console.log(`Period: ${period}, Start Date: ${startDate}, End Date: ${endDate}`); // Debug log
+
     if (!userId) {
+        // console.log('No user ID found in session.');
         return res.status(403).send('Not authorized');
     }
 
     try {
-        // Fetch user email and name (fix: changed `id` to `user_id`)
+        // Fetch user email and name
         const userInfo = await pool.query(`SELECT username, email FROM users WHERE user_id = $1`, [userId]);
         const user = userInfo.rows[0];
+        // console.log('User Info:', user); // Debug log
 
+        if (!user) {
+            console.log('User not found in the database.');
+            return res.status(404).send('User not found');
+        }
+
+        // Fetch profit and loss data
         const result = await pool.query(
             `SELECT stock_symbol, stock_name, 
                     TO_CHAR(pl_date, 'YYYY-MM-DD') AS pl_date,  
@@ -61,8 +73,8 @@ router.get('/reports', authMiddleware, async (req, res) => {
              ORDER BY stock_symbol ASC`,
             [userId, startDate, endDate]
         );
-
         const reportsData = result.rows;
+        // console.log('Fetched Reports Data:', reportsData); // Debug log
 
         // Calculate total profit, total invested, and percentage return
         const totalProfit = reportsData.reduce((acc, entry) => acc + parseFloat(entry.total_profit_loss), 0);
@@ -89,6 +101,7 @@ router.get('/reports', authMiddleware, async (req, res) => {
 // Additional route to handle downloading reports as CSV
 router.get('/reports/download', authMiddleware, async (req, res) => {
     const userId = req.session.userId;
+    // console.log('Downloading reports for User ID:', userId); // Debug log
 
     if (!userId) {
         return res.status(403).send('Not authorized');
@@ -106,8 +119,8 @@ router.get('/reports/download', authMiddleware, async (req, res) => {
              ORDER BY stock_symbol ASC`,
             [userId]
         );
-
         const reportsData = result.rows;
+        // console.log('Reports Data for CSV:', reportsData); // Debug log
 
         // Generate CSV
         let csv = 'Stock Symbol,Stock Name,Date,Total Profit/Loss,Total Invested\n';
@@ -130,20 +143,23 @@ router.get('/transactions', authMiddleware, async (req, res) => {
     const userId = req.session.userId;
     const stockSymbol = req.query.symbol;
 
+    // console.log(`Fetching transactions for User ID: ${userId}, Stock Symbol: ${stockSymbol}`); // Debug log
+
     if (!userId || !stockSymbol) {
         return res.status(403).send('Not authorized');
     }
 
     try {
         const result = await pool.query(
-            `SELECT transaction_date, quantity, amount 
+            `SELECT transaction_date, quantity, limit_price 
              FROM transactions 
              WHERE user_id = $1 AND stock_symbol = $2 
              ORDER BY transaction_date ASC`,
             [userId, stockSymbol]
         );
-
-        res.json(result.rows);
+        const transactions = result.rows;
+        // console.log('Fetched Transactions:', transactions); // Debug log
+        res.json(transactions);
     } catch (err) {
         console.error('Error fetching transactions:', err);
         res.status(500).send('Server error');
