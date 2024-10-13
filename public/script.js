@@ -33,6 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
     { symbol: 'THETAUSDT', name: 'Theta (THETA)' }
   ];
 
+  let priceFetchInterval;
+  let isOffline = false;
 
   function createCryptoListItem(crypto) {
     const li = document.createElement('li');
@@ -55,6 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function fetchPrices() {
+    if (isOffline) return; // Don't fetch prices if offline
+
     fetch('/crypto-prices')
       .then(response => response.json())
       .then(prices => {
@@ -75,11 +79,40 @@ document.addEventListener('DOMContentLoaded', () => {
       .catch(error => console.error('Error fetching prices:', error));
   }
 
-  fetchPrices(); // Initial fetch
-  setInterval(fetchPrices, 2000); // Fetch prices every 2 seconds
-  const closeOption = document.getElementById('close-option');
-  closeOption.addEventListener('click', () => {
-    document.getElementById('myportfolio').style.display = 'none';
+  // Start fetching prices initially
+  priceFetchInterval = setInterval(fetchPrices, 1300); // Fetch prices every 2 seconds
+
+  function stopFetchingPrices() {
+    clearInterval(priceFetchInterval);
+  }
+
+  function resumeFetchingPrices() {
+    if (!isOffline) {
+      priceFetchInterval = setInterval(fetchPrices, 1300);
+    }
+  }
+
+  function alertUserConnectionLost() {
+    alert('You have lost connection. Some functionality will be unavailable until the connection is restored.');
+  }
+
+  function alertUserConnectionRestored() {
+    alert('Connection restored. Resuming functionality.');
+  }
+
+  // Handle online/offline events
+  window.addEventListener('offline', () => {
+    isOffline = true;
+    stopFetchingPrices();
+    alertUserConnectionLost();
+    document.getElementById('connection-status').textContent = 'Offline';
+  });
+
+  window.addEventListener('online', () => {
+    isOffline = false;
+    resumeFetchingPrices();
+    alertUserConnectionRestored();
+    document.getElementById('connection-status').textContent = 'Online';
   });
 
   function changeChart(symbol) {
@@ -142,13 +175,13 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('order-type-select').addEventListener('change', (event) => {
     const limitPriceContainer = document.getElementById('limit-price-container');
     if (event.target.value === 'limit') {
-        limitPriceContainer.style.display = 'block';
+      limitPriceContainer.style.display = 'block';
     } else {
-        limitPriceContainer.style.display = 'none';
+      limitPriceContainer.style.display = 'none';
     }
-});
+  });
 
-  // Set default chart and values
+  // Default chart and values
   changeChart('BTCUSDT');
   updateForms('BTCUSDT', 'Bitcoin (BTC)');
   fetchPrice('BTCUSDT').then(price => {
@@ -173,6 +206,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function updatePortfolio() {
+    if (isOffline) return; // Don't update portfolio if offline
+
     fetch('/holdings/data')
       .then(response => response.json())
       .then(data => {
@@ -196,42 +231,4 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   setInterval(updatePortfolio, 1000); // Fetch and update portfolio data every second
-
-
-  const fundsLink = document.getElementById('fundsLink');
-  const modal = document.getElementById('add-funds-modal');
-  const closeButton = document.querySelector('.close-button');
-
-  fundsLink.addEventListener('click', function () {
-    modal.style.display = 'block';
-    centerModal();
-  });
-
-  closeButton.addEventListener('click', function () {
-    modal.style.display = 'none';
-  });
-
-  window.addEventListener('click', function (event) {
-    if (event.target === modal) {
-      modal.style.display = 'none';
-    }
-  });
-
-  function centerModal() {
-    const modalContent = document.querySelector('.modal-content');
-    const windowHeight = window.innerHeight;
-    const modalHeight = modalContent.offsetHeight;
-    modalContent.style.marginTop = `${(windowHeight - modalHeight) / 2}px`;
-  }
-
-  function toggleWatchlist() {
-    var watchlist = document.getElementById('watchlist');
-    if (watchlist.classList.contains('open')) {
-        watchlist.classList.remove('open');
-    } else {
-        watchlist.classList.add('open');
-    }
-}
 });
-
-

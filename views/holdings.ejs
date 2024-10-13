@@ -66,10 +66,30 @@
             height: 3rem;
             border-width: 0.3em;
         }
+
+        /* Offline Alert Styles */
+        .offline-alert {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: red;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            z-index: 1000;
+        }
+
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="container py-5">
+        <div id="offlineAlert" class="offline-alert hidden">
+            You are offline. Please check your connection.
+        </div>
+
         <div class="row text-center mb-4">
             <div class="col-12 col-md-4 mb-4 mb-md-0">
                 <div class="p-3 bg-dark-3 rounded shadow-sm">
@@ -104,8 +124,9 @@
         window.addEventListener('load', () => {
             updatePortfolio();
             setInterval(fetchHoldingsData, 2500); // Fetch holdings every second
+            handleConnectionStatus();
         });
-    
+
         // Fetch the entire portfolio once on page load
         function updatePortfolio() {
             fetch('/holdings/data')
@@ -113,13 +134,13 @@
                 .then(data => {
                     // Hide the spinner
                     document.getElementById('spinner').style.display = 'none';
-    
+
                     // Update static portfolio data
                     document.getElementById('totalInvested').innerText = `$ ${data.totalInvested}`;
                     document.getElementById('totalCurrent').innerText = `$ ${data.totalCurrent}`;
                     document.getElementById('totalReturn').innerText = `${data.totalReturn >= 0 ? '+' : ''}${data.totalReturn} (${data.totalReturnPercentage}%)`;
                     document.getElementById('totalReturn').className = data.totalReturn >= 0 ? 'text-success' : 'text-danger';
-    
+
                     // Display holdings
                     displayHoldings(data.holdings);
                 })
@@ -128,66 +149,82 @@
                     document.getElementById('spinner').style.display = 'none';
                 });
         }
-    
+
         // Function to display holdings
-// Function to display holdings
-function displayHoldings(holdings) {
-    let totalCurrentValue = 0;
-    let totalReturnValue = 0;
+        function displayHoldings(holdings) {
+            let totalCurrentValue = 0;
+            let totalReturnValue = 0;
 
-    const holdingsContainer = document.getElementById('holdingsContainer');
-    holdingsContainer.innerHTML = ''; // Clear existing holdings
+            const holdingsContainer = document.getElementById('holdingsContainer');
+            holdingsContainer.innerHTML = ''; // Clear existing holdings
 
-    holdings.forEach(holding => {
-        const holdingElement = document.createElement('div');
-        holdingElement.className = 'card bg-dark-3 text-light mb-3';
-        holdingElement.innerHTML = `
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center flex-wrap">
-                    <div>
-                        <h5 class="card-title mb-2">${holding.stock_name}</h5>
-                        <p class="mb-1"><i class="fa-solid fa-coins"></i> Invested: $${holding.invested}</p>
-                        <p class="mb-1"><i class="fa-solid fa-layer-group"></i> Qty: ${holding.quantity}</p>
-                        <p class="mb-1"><i class="fa-solid fa-chart-line"></i> Avg. Price: $${holding.average_price}</p>
+            holdings.forEach(holding => {
+                const holdingElement = document.createElement('div');
+                holdingElement.className = 'card bg-dark-3 text-light mb-3';
+                holdingElement.innerHTML = `
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap">
+                            <div>
+                                <h5 class="card-title mb-2">${holding.stock_name}</h5>
+                                <p class="mb-1"><i class="fa-solid fa-coins"></i> Invested: $${holding.invested}</p>
+                                <p class="mb-1"><i class="fa-solid fa-layer-group"></i> Qty: ${holding.quantity}</p>
+                                <p class="mb-1"><i class="fa-solid fa-chart-line"></i> Avg. Price: $${holding.average_price}</p>
+                            </div>
+                            <div class="text-end">
+                                <p class="mb-1"><i class="fa-solid fa-chart-bar"></i> Current Value: $${(holding.quantity * holding.current_price).toFixed(2)}</p>
+                                <p class="${holding.current_return >= 0 ? 'text-success' : 'text-danger'}">
+                                    <i class="fa-solid ${holding.current_return >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'}"></i> 
+                                    Total Return: ${holding.current_return >= 0 ? '+' : ''}${holding.current_return.toFixed(2)} 
+                                    (${holding.current_return_percentage.toFixed(2)}%)
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="text-end">
-                        <p class="mb-1"><i class="fa-solid fa-chart-bar"></i> Current Value: $${(holding.quantity * holding.current_price).toFixed(2)}</p>
-                        <p class="${holding.current_return >= 0 ? 'text-success' : 'text-danger'}">
-                            <i class="fa-solid ${holding.current_return >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'}"></i> 
-                            Total Return: ${holding.current_return >= 0 ? '+' : ''}${holding.current_return.toFixed(2)} 
-                            (${holding.current_return_percentage.toFixed(2)}%)
-                        </p>
-                    </div>
-                </div>
-            </div>
-        `;
+                `;
 
-        holdingsContainer.appendChild(holdingElement);
+                holdingsContainer.appendChild(holdingElement);
 
-        // Calculate total current and total return
-        totalCurrentValue += holding.quantity * holding.current_price;
-        totalReturnValue += holding.current_return;
-    });
+                // Calculate total current and total return
+                totalCurrentValue += holding.quantity * holding.current_price;
+                totalReturnValue += holding.current_return;
+            });
 
-    // Update the UI with the new total values
-    document.getElementById('totalCurrent').innerText = `$ ${totalCurrentValue.toFixed(2)}`;
-    document.getElementById('totalReturn').innerText = `${totalReturnValue >= 0 ? '+' : ''}${totalReturnValue.toFixed(2)} (${((totalReturnValue / totalCurrentValue) * 100).toFixed(2)}%)`;
-    document.getElementById('totalReturn').className = totalReturnValue >= 0 ? 'text-success' : 'text-danger';
-}
+            // Update the UI with the new total values
+            document.getElementById('totalCurrent').innerText = `$ ${totalCurrentValue.toFixed(2)}`;
+            document.getElementById('totalReturn').innerText = `${totalReturnValue >= 0 ? '+' : ''}${totalReturnValue.toFixed(2)} (${((totalReturnValue / totalCurrentValue) * 100).toFixed(2)}%)`;
+            document.getElementById('totalReturn').className = totalReturnValue >= 0 ? 'text-success' : 'text-danger';
+        }
 
-        // Fetch and update holdings data every second
+        // Fetch and update holdings data
         async function fetchHoldingsData() {
             try {
                 const response = await fetch('/holdings/data');
                 const data = await response.json();
-    
+
                 // Only update holdings
                 displayHoldings(data.holdings);
             } catch (error) {
                 console.error('Error fetching holdings data:', error);
             }
         }
-    </script>    
+
+        // Handle connection status changes
+        function handleConnectionStatus() {
+            window.addEventListener('online', () => {
+                document.getElementById('offlineAlert').classList.add('hidden');
+                updatePortfolio(); // Resume fetching data
+            });
+
+            window.addEventListener('offline', () => {
+                document.getElementById('offlineAlert').classList.remove('hidden');
+            });
+
+            // Initial check for connection status
+            if (!navigator.onLine) {
+                document.getElementById('offlineAlert').classList.remove('hidden');
+            }
+        }
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>

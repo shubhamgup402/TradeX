@@ -55,6 +55,32 @@ tr:nth-child(even) {
 .cancel-button:hover {
   background-color: #d32f2f;
 }
+
+form {
+  margin-bottom: 20px;
+}
+
+form label {
+  margin-right: 10px;
+}
+
+form input, form select {
+  margin-right: 10px;
+  padding: 5px;
+}
+
+form button {
+  padding: 5px 10px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+form button:hover {
+  background-color: #45a049;
+}
 </style>
 </head>
 <body>
@@ -93,9 +119,56 @@ tr:nth-child(even) {
   <% } %>
 </table>
 
+<!-- Updated Filter Form for Transactions in a Single Row -->
 <div style="margin-top: 30px;">
-  <h1 style="float: left;">Trade History</h1>
-  <span class="up-arrow" style="float: right;">&#x25B2;</span>
+  <h1>Trade History</h1>
+  <form id="filterForm" method="GET" action="/transaction" class="mb-4" style="padding: 15px; background-color: #202020; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.5);">
+    
+    <div class="form-row" style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: space-between; align-items: center;">
+        <div class="col" style="flex: 1; min-width: 150px;">
+            <label for="startDate" style="margin-bottom: 5px;">Start Date:</label>
+            <input type="date" id="startDate" name="startDate" value="<%= startDate %>" class="form-control" style="width: 100%; padding: 8px; background-color: #282828; color: white; border: none; border-radius: 5px;">
+        </div>
+        <div class="col" style="flex: 1; min-width: 150px;">
+            <label for="endDate" style="margin-bottom: 5px;">End Date:</label>
+            <input type="date" id="endDate" name="endDate" value="<%= endDate %>" class="form-control" style="width: 100%; padding: 8px; background-color: #282828; color: white; border: none; border-radius: 5px;">
+        </div>
+        <div class="col" style="flex: 1; min-width: 150px;">
+            <label for="status" style="margin-bottom: 5px;">Status:</label>
+            <select id="status" name="status" class="form-control" style="width: 100%; padding: 8px; background-color: #282828; color: white; border: none; border-radius: 5px;">
+                <option value="" <%= !status ? 'selected' : '' %>>All</option>
+                <option value="success" <%= status === 'success' ? 'selected' : '' %>>Success</option>
+                <option value="fail" <%= status === 'fail' ? 'selected' : '' %>>Fail</option>
+                <option value="pending" <%= status === 'pending' ? 'selected' : '' %>>Pending</option>
+            </select>
+        </div>
+        <div class="col" style="flex: 1; min-width: 150px;">
+            <label for="orderAction" style="margin-bottom: 5px;">Order Action:</label>
+            <select id="orderAction" name="orderAction" class="form-control" style="width: 100%; padding: 8px; background-color: #282828; color: white; border: none; border-radius: 5px;">
+                <option value="" <%= !orderAction ? 'selected' : '' %>>All</option>
+                <option value="buy" <%= orderAction === 'buy' ? 'selected' : '' %>>Buy</option>
+                <option value="sell" <%= orderAction === 'sell' ? 'selected' : '' %>>Sell</option>
+            </select>
+        </div>
+        <div class="col" style="flex: 1; min-width: 150px;">
+            <label for="orderType" style="margin-bottom: 5px;">Order Type:</label>
+            <select id="orderType" name="orderType" class="form-control" style="width: 100%; padding: 8px; background-color: #282828; color: white; border: none; border-radius: 5px;">
+                <option value="" <%= !orderType ? 'selected' : '' %>>All</option>
+                <option value="market" <%= orderType === 'market' ? 'selected' : '' %>>Market</option>
+                <option value="limit" <%= orderType === 'limit' ? 'selected' : '' %>>Limit</option>
+            </select>
+        </div>
+        <div class="col" style="flex: 1; min-width: 150px;">
+            <label for="cryptoName" style="margin-bottom: 5px;">Crypto Name:</label>
+            <input type="text" id="cryptoName" name="cryptoName" value="<%= cryptoName %>" class="form-control" placeholder="Enter Crypto Name" style="width: 100%; padding: 8px; background-color: #282828; color: white; border: none; border-radius: 5px;">
+        </div>
+        <div style="flex: 1; min-width: 150px; display: flex; gap: 10px; margin-top: 25px;">
+            <button type="submit" class="btn btn-primary" style="padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">Filter</button>
+            <button type="button" class="btn btn-secondary" style="padding: 10px 20px; background-color: #FF5722; color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="resetFilters()">Reset</button>
+        </div>
+    </div>
+    
+  </form>
 </div>
 
 <table>
@@ -144,6 +217,13 @@ function cancelOrder(orderId) {
     });
   }
 }
+    function resetFilters() {
+        document.getElementById('startDate').value = '';
+        document.getElementById('endDate').value = '';
+        document.getElementById('status').selectedIndex = 0; // Reset to 'All'
+        document.getElementById('orderAction').selectedIndex = 0; // Reset to 'All'
+        document.getElementById('orderType').selectedIndex = 0; // Reset to 'All'
+    }
 </script>
 
 </body>

@@ -157,6 +157,40 @@
       }
       return true;
     }
+    const fundsLink = document.getElementById('fundsLink');
+  const modal = document.getElementById('add-funds-modal');
+  const closeButton = document.querySelector('.close-button');
+
+  fundsLink.addEventListener('click', function () {
+    modal.style.display = 'block';
+    centerModal();
+  });
+
+  closeButton.addEventListener('click', function () {
+    modal.style.display = 'none';
+  });
+
+  window.addEventListener('click', function (event) {
+    if (event.target === modal) {
+      modal.style.display = 'none';
+    }
+  });
+
+  function centerModal() {
+    const modalContent = document.querySelector('.modal-content');
+    const windowHeight = window.innerHeight;
+    const modalHeight = modalContent.offsetHeight;
+    modalContent.style.marginTop = `${(windowHeight - modalHeight) / 2}px`;
+  }
+
+  function toggleWatchlist() {
+    var watchlist = document.getElementById('watchlist');
+    if (watchlist.classList.contains('open')) {
+        watchlist.classList.remove('open');
+    } else {
+        watchlist.classList.add('open');
+    }
+}
   </script>
 </body>
 </html>
