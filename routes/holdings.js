@@ -33,7 +33,7 @@ async function fetchHoldingsData(userId) {
     }
     const balance = userResult.rows[0].balance;
 
-    const holdingsResult = await pool.query('SELECT stock_symbol, stock_name, quantity, invested, average_price FROM holdings WHERE user_id = $1', [userId]);
+    const holdingsResult = await pool.query('SELECT stock_symbol, stock_name, quantity, invested, average_price FROM holdings WHERE user_id = $1 ORDER BY stock_name ASC', [userId]);
     const holdings = holdingsResult.rows;
 
     let totalInvested = 0;
