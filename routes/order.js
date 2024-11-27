@@ -135,30 +135,45 @@ async function processOrder(userId, stock_symbol, stock_name, quantity, order_ac
 async function checkPendingOrders(userId, stock_symbol, stock_name, quantity, order_action, limit_price) {
   const checkOrderStatus = async () => {
     try {
-      const currentPrice = await getMarketPrice(stock_symbol);
+      const currentPrice = parseFloat(await getMarketPrice(stock_symbol));
 
-      if ((order_action === 'buy' && currentPrice <= limit_price) || (order_action === 'sell' && currentPrice >= limit_price)) {
-        await processOrder(userId, stock_symbol, stock_name, quantity, order_action, limit_price, limit_price * quantity);
+      if (
+        (order_action === 'buy' && currentPrice <= limit_price) || 
+        (order_action === 'sell' && currentPrice >= limit_price)
+      ) {
+        // Execute the order at the current market price
+        const executionPrice = currentPrice; 
+        const totalAmount = executionPrice * quantity;
+
+        await processOrder(userId, stock_symbol, stock_name, quantity, order_action, executionPrice, totalAmount);
+
+        // Delete the pending order after execution
         await pool.query(
           'DELETE FROM pending_orders WHERE user_id = $1 AND stock_symbol = $2 AND order_action = $3 AND quantity = $4 AND order_type = $5 AND limit_price = $6',
           [userId, stock_symbol, order_action, quantity, 'limit', limit_price]
         );
-        console.log('Order executed successfully.');
+
+        // console.log(`Order executed successfully at market price: ${executionPrice}`);
       } else {
+        // Retry after a delay
         setTimeout(checkOrderStatus, 10000);
       }
     } catch (error) {
       console.error('Error checking order status:', error);
+
+      // Update the pending order status to 'fail' in case of an error
       await pool.query(
         'UPDATE pending_orders SET status = $1 WHERE user_id = $2 AND stock_symbol = $3 AND order_action = $4 AND quantity = $5 AND order_type = $6 AND limit_price = $7',
         ['fail', userId, stock_symbol, order_action, quantity, 'limit', limit_price]
       );
+
       console.log('Order failed.');
     }
   };
 
   setTimeout(checkOrderStatus, 4000);
 }
+
 
 
 module.exports = router;
